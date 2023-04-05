@@ -1,0 +1,21 @@
+{
+  "name": "subscribablemap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --inject-globals false"
+  },
+  "author": "TrueWinter",
+  "repository": {
+	  "type": "git",
+	  "url": "https://github.com/TrueWinter/SubscribableMap.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.5.0"
+  },
+  "dependencies": {
+    "eslint-plugin-jest": "^27.2.1"
+  }
+}

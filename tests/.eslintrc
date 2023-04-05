@@ -1,0 +1,16 @@
+{
+	"env": {
+		"jest/globals": true,
+		"es6": true
+	},
+	"plugins": [
+		"jest"
+	],
+	"extends": [
+		"plugin:jest/recommended",
+		"plugin:jest/style"
+	],
+	"parserOptions": {
+		"ecmaVersion": "latest"
+	}
+}
