@@ -1,7 +1,7 @@
 {
   "name": "subscribablemap",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.1",
+  "description": "SubscribableMap extends the Map class and calls a function when a value is changed.",
   "main": "index.js",
   "scripts": {
     "test": "jest --inject-globals false"

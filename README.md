@@ -29,8 +29,13 @@ let map = new SubscribableMap();
 
 map.subscribe((s) => {
 	// Returns: { event: 'set', key: 'test', value: 'ing' }
+	// If you have different code for different events, it is
+	// advisable to check if the event equals an enum in
+	// SubscribableMap.enum (e.g. s.event === SubscribableMap.enum.SET).
 	console.log(s);
 });
 
 map.set('test', 'ing');
 ```
+
+**Important:** Only the `set()` and `delete()` methods will dispatch events.
