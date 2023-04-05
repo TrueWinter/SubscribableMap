@@ -1,17 +1,18 @@
 /**
- * @typedef {'set' | 'delete'} SubscribableMapEnum
+ * @typedef {'set' | 'delete' | 'clear'} SubscribableMapEnum
  */
 /**
  * @typedef {Object} SubscribeCallbackData
- * @property {SubscribableMapEnum} event
- * @property {*} key
- * @property {*} value
+ * @property {SubscribableMapEnum} event The event
+ * @property {*} [key] The key, or undefined for the clear() method
+ * @property {*} [value] The value, or undefined for the delete()/clear() methods
  */
 
 module.exports = class SubscribableMap extends Map {
 	static enum = Object.freeze({
 		SET: 'set',
-		DELETE: 'delete'
+		DELETE: 'delete',
+		CLEAR: 'clear'
 	});
 
 	/**
@@ -112,7 +113,8 @@ module.exports = class SubscribableMap extends Map {
 		if (this._subscribers.size === 0) return;
 
 		let shouldDispatch = true;
-		if (Date.now() < (this._previousDispatchTimes.get(key) || 0) + this._opts.cooldown) {
+		// Doesn't make much sense having cooldown apply to clear() because there's no key passed in clear(), so skip the cooldown check
+		if (event !== SubscribableMap.enum.CLEAR && Date.now() < (this._previousDispatchTimes.get(key) || 0) + this._opts.cooldown) {
 			if (!(event === SubscribableMap.enum.DELETE && this._opts.deleteBypassesCooldown)) {
 				shouldDispatch = false;
 			}
@@ -139,8 +141,8 @@ module.exports = class SubscribableMap extends Map {
 	 * @param {*} value The value
 	 */
 	set(key, value) {
-		this._emit(key, value, SubscribableMap.enum.SET);
 		super.set(key, value);
+		this._emit(key, value, SubscribableMap.enum.SET);
 	}
 
 	/**
@@ -148,7 +150,15 @@ module.exports = class SubscribableMap extends Map {
 	 * @param {*} key The key to delete
 	 */
 	delete(key) {
-		this._emit(key, undefined, SubscribableMap.enum.DELETE);
 		super.delete(key);
+		this._emit(key, undefined, SubscribableMap.enum.DELETE);
+	}
+
+	/**
+	 * Clears the map
+	 */
+	clear() {
+		super.clear();
+		this._emit(undefined, undefined, SubscribableMap.enum.CLEAR);
 	}
 };

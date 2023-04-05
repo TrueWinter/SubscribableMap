@@ -1,4 +1,4 @@
-const { describe, test, expect, jest, afterEach } = require('@jest/globals');
+const { describe, test, expect, jest, beforeEach } = require('@jest/globals');
 const { promisify } = require('util');
 const SubscribableMap = require('../index.js');
 const commonTests = require('./_common.js');
@@ -10,8 +10,8 @@ const INITIAL_VALUE = [
 const wait = promisify(setTimeout);
 
 var handleEvent = jest.fn((e) => e);
-afterEach(() => {
-	handleEvent.mockClear();
+beforeEach(() => {
+	jest.clearAllMocks();
 });
 
 describe('Initializing without initial value', () => {
@@ -104,6 +104,15 @@ describe('Initializing with cooldown set', () => {
 		expect(handleEvent).toHaveBeenCalledTimes(2);
 		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.DELETE);
 	});
+
+	test('clear bypasses cooldown', async() => {
+		map.set('clear-test', '1234');
+		map.set('clear-test', '5678');
+		map.clear();
+
+		expect(handleEvent).toHaveBeenCalledTimes(2);
+		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.CLEAR);
+	});
 });
 
 describe('Initializing with cooldown set, but deletes do not bypass cooldown', () => {
@@ -145,5 +154,14 @@ describe('Initializing with cooldown set, but deletes do not bypass cooldown', (
 
 		expect(handleEvent).toHaveBeenCalledTimes(1);
 		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
+	});
+
+	test('clear does not bypass cooldown', async() => {
+		map.set('clear-test', '1234');
+		map.set('clear-test', '5678');
+		map.clear();
+
+		expect(handleEvent).toHaveBeenCalledTimes(2);
+		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.CLEAR);
 	});
 });

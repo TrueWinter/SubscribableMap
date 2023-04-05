@@ -66,7 +66,6 @@ module.exports.common = (map) => {
 		map.set('test', 'ing');
 
 		expect(handleEvent).toHaveBeenCalled();
-		handleEvent.mockClear();
 	});
 };
 
