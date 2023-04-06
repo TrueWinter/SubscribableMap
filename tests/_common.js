@@ -18,9 +18,6 @@ module.exports.pre = (map) => {
  * @param {SubscribableMap} map 
  */
 module.exports.common = (map) => {
-	/**
-	 * @param {SubscribableMap.SubscribeCallbackData} e
-	 */
 	let handleEvent = jest.fn();
 
 	test('subscribing adds callback to the subscription set', () => {
@@ -77,33 +74,6 @@ module.exports.common = (map) => {
 
 		expect(handleEvent).toHaveBeenCalledTimes(1);
 	});
-
-	test('set() event is not emitted if emit is false', async () => {
-		map.subscribe(handleEvent);
-		// To ensure that the non-emitting behaviour isn't being caused by a cooldown
-		await wait(1000);
-		map.set('test', '1234', false);
-
-		expect(handleEvent).toHaveBeenCalledTimes(0);
-	});
-	
-	test('delete() event is not emitted if emit is false', async () => {
-		map.subscribe(handleEvent);
-		// To ensure that the non-emitting behaviour isn't being caused by a cooldown
-		await wait(1000);
-		map.delete('test', false);
-
-		expect(handleEvent).toHaveBeenCalledTimes(0);
-	});
-
-	test('clear() event is not emitted if emit is false', async () => {
-		map.subscribe(handleEvent);
-		// To ensure that the non-emitting behaviour isn't being caused by a cooldown
-		await wait(1000);
-		map.clear(false);
-
-		expect(handleEvent).toHaveBeenCalledTimes(0);
-	});
 };
 
 // set() and clear() are already tested in common.
@@ -116,15 +86,44 @@ module.exports.events = {
 	 * @param {SubscribableMap} map 
 	 */
 	delete: (map) => {
-		/**
-		 * @param {SubscribableMap.SubscribeCallbackData} e
-		 */
 		let handleEvent = jest.fn();
 		test('subscribers receive callbacks for delete()', () => {
 			map.subscribe(handleEvent);
 			map.delete('test');
 
 			expect(handleEvent).toHaveBeenCalledTimes(1);
+		});
+	},
+	/**
+	 * @param {SubscribableMap} map
+	 */
+	 noEmitIfFalse: (map) => {
+		let handleEvent = jest.fn();
+		test('set() event is not emitted if emit is false', async () => {
+			map.subscribe(handleEvent);
+			// To ensure that the non-emitting behaviour isn't being caused by a cooldown
+			await wait(1000);
+			map.set('test', '1234', false);
+	
+			expect(handleEvent).toHaveBeenCalledTimes(0);
+		});
+		
+		test('delete() event is not emitted if emit is false', async () => {
+			map.subscribe(handleEvent);
+			// To ensure that the non-emitting behaviour isn't being caused by a cooldown
+			await wait(1000);
+			map.delete('test', false);
+	
+			expect(handleEvent).toHaveBeenCalledTimes(0);
+		});
+	
+		test('clear() event is not emitted if emit is false', async () => {
+			map.subscribe(handleEvent);
+			// To ensure that the non-emitting behaviour isn't being caused by a cooldown
+			await wait(1000);
+			map.clear(false);
+	
+			expect(handleEvent).toHaveBeenCalledTimes(0);
 		});
 	}
 }
@@ -163,3 +162,67 @@ module.exports.defaults = {
 		});
 	}
 };
+
+module.exports.settings = {
+	/**
+	 * @param {SubscribableMap} map
+	 */
+	cooldown: (map) => {
+		let handleEvent = jest.fn();
+		test('has cooldown', async () => {
+			map.subscribe(handleEvent);
+			map.set('testing', '1234');
+			map.set('testing', '5678');
+			await wait(1000);
+			map.set('testing', '1234');
+	
+			expect(handleEvent).toHaveBeenCalledTimes(2);
+			expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
+		});
+	},
+	/**
+	 * @param {SubscribableMap} map
+	 */
+	clearBypassesCooldown: (map) => {
+		let handleEvent = jest.fn();
+		test('clear bypasses cooldown', async() => {
+			map.subscribe(handleEvent);
+			map.set('clear-test', '1234');
+			map.set('clear-test', '5678');
+			map.clear();
+	
+			expect(handleEvent).toHaveBeenCalledTimes(2);
+			expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.CLEAR);
+		});
+	},
+	/**
+	 * @param {SubscribableMap} map
+	 */
+	deleteBypassesCooldown: (map) => {
+		let handleEvent = jest.fn();
+		test('delete bypasses cooldown', async() => {
+			map.subscribe(handleEvent);
+			map.set('delete-test', '1234');
+			map.set('delete-test', '5678');
+			map.delete('delete-test');
+	
+			expect(handleEvent).toHaveBeenCalledTimes(2);
+			expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.DELETE);
+		});
+	},
+	/**
+	 * @param {SubscribableMap} map
+	 */
+	noCooldown: (map) => {
+		let handleEvent = jest.fn();
+		test('no cooldown', async () => {
+			map.subscribe(handleEvent);
+			map.set('testing', '1234');
+			map.set('testing', '5678');
+			map.set('testing', '1234');
+	
+			expect(handleEvent).toHaveBeenCalledTimes(3);
+			expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
+		});
+	}
+}

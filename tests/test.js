@@ -32,17 +32,9 @@ describe('Initializing without initial value', () => {
 	commonTests.defaults.defaultInitialValueBlank(map);
 
 	commonTests.common(map);
+	commonTests.events.noEmitIfFalse(map);
 	commonTests.events.delete(map);
-
-	test('no cooldown', async () => {
-		map.subscribe(handleEvent);
-		map.set('testing', '1234');
-		map.set('testing', '5678');
-		map.set('testing', '1234');
-
-		expect(handleEvent).toHaveBeenCalledTimes(3);
-		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
-	});
+	commonTests.settings.noCooldown(map);
 });
 
 describe('Initializing with initial value', () => {
@@ -64,17 +56,9 @@ describe('Initializing with initial value', () => {
 	commonTests.defaults.defaultInitialValueBlank(map);
 
 	commonTests.common(map);
+	commonTests.events.noEmitIfFalse(map);
 	commonTests.events.delete(map);
-
-	test('no cooldown', async () => {
-		map.subscribe(handleEvent);
-		map.set('testing', '1234');
-		map.set('testing', '5678');
-		map.set('testing', '1234');
-
-		expect(handleEvent).toHaveBeenCalledTimes(3);
-		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
-	});
+	commonTests.settings.noCooldown(map);
 });
 
 describe('Initializing with cooldown set', () => {
@@ -94,37 +78,10 @@ describe('Initializing with cooldown set', () => {
 	commonTests.defaults.defaultInitialValueBlank(map);
 
 	commonTests.common(map);
-
-	test('has cooldown', async () => {
-		map.subscribe(handleEvent);
-		map.set('testing', '1234');
-		map.set('testing', '5678');
-		await wait(1000);
-		map.set('testing', '1234');
-
-		expect(handleEvent).toHaveBeenCalledTimes(2);
-		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
-	});
-
-	test('delete bypasses cooldown', async() => {
-		map.subscribe(handleEvent);
-		map.set('delete-test', '1234');
-		map.set('delete-test', '5678');
-		map.delete('delete-test');
-
-		expect(handleEvent).toHaveBeenCalledTimes(2);
-		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.DELETE);
-	});
-
-	test('clear bypasses cooldown', async() => {
-		map.subscribe(handleEvent);
-		map.set('clear-test', '1234');
-		map.set('clear-test', '5678');
-		map.clear();
-
-		expect(handleEvent).toHaveBeenCalledTimes(2);
-		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.CLEAR);
-	});
+	commonTests.events.noEmitIfFalse(map);
+	commonTests.settings.cooldown(map);
+	commonTests.settings.deleteBypassesCooldown(map);
+	commonTests.settings.clearBypassesCooldown(map);
 });
 
 describe('Initializing with cooldown set, but deletes do not bypass cooldown', () => {
@@ -148,17 +105,8 @@ describe('Initializing with cooldown set, but deletes do not bypass cooldown', (
 	commonTests.defaults.defaultInitialValueBlank(map);
 
 	commonTests.common(map);
-
-	test('has cooldown', async () => {
-		map.subscribe(handleEvent);
-		map.set('testing', '1234');
-		map.set('testing', '5678');
-		await wait(1000);
-		map.set('testing', '1234');
-
-		expect(handleEvent).toHaveBeenCalledTimes(2);
-		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
-	});
+	commonTests.events.noEmitIfFalse(map);
+	commonTests.settings.cooldown(map);
 
 	test('delete does not bypass cooldown', async() => {
 		map.subscribe(handleEvent);
@@ -170,13 +118,51 @@ describe('Initializing with cooldown set, but deletes do not bypass cooldown', (
 		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SET);
 	});
 
-	test('clear does not bypass cooldown', async() => {
-		map.subscribe(handleEvent);
-		map.set('clear-test', '1234');
-		map.set('clear-test', '5678');
-		map.clear();
+	commonTests.settings.clearBypassesCooldown(map);
+});
 
+describe('Initializing with cooldown set, and data will be forcefully emitted after cooldown if changed', () => {
+	let map = new SubscribableMap({
+		cooldown: 1000,
+		forceEmitAfterCooldownIfChanged: true
+	});
+	init(map);
+
+	commonTests.pre(map);
+
+	test('cooldown is set', () => {
+		expect(map.getOpts().cooldown).toBe(1000);
+	});
+
+	test('forceEmitAfterCooldownIfChanged is set', () => {
+		expect(map.getOpts().forceEmitAfterCooldownIfChanged).toBe(true);
+	})
+
+	commonTests.defaults.deleteBypassesCooldownTrue(map);
+	commonTests.defaults.noInitialValue(map);
+	commonTests.defaults.defaultInitialValueBlank(map);
+
+	commonTests.common(map);
+	commonTests.settings.cooldown(map);
+	commonTests.settings.deleteBypassesCooldown(map);
+	commonTests.settings.clearBypassesCooldown(map);
+
+	test('data will be forcefully emitted after cooldown if data is changed', async () => {
+		// This test requires a more controlled test environment to ensure
+		// that the other tests do not affect this one.
+		let testMap = new SubscribableMap({
+			cooldown: 1000,
+			forceEmitAfterCooldownIfChanged: true
+		});
+
+		testMap.subscribe(handleEvent);
+		testMap.set('force-emit-changed', 'test');
+		testMap.set('force-emit-changed', 'testing');
+
+		expect(handleEvent).toHaveBeenCalledTimes(1);
+		// Sync events can be up to 100ms late
+		await wait(1100);
 		expect(handleEvent).toHaveBeenCalledTimes(2);
-		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.CLEAR);
+		expect(handleEvent.mock.lastCall[0].event).toBe(SubscribableMap.enum.SYNC);
 	});
 });

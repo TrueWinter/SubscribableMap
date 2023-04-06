@@ -1,5 +1,5 @@
 /**
- * @typedef {'set' | 'delete' | 'clear'} SubscribableMapEnum
+ * @typedef {'set' | 'delete' | 'clear' | 'sync'} SubscribableMapEnum
  */
 /**
  * @typedef {Object} SubscribeCallbackData
@@ -10,15 +10,17 @@
 
 module.exports = class SubscribableMap extends Map {
 	static enum = Object.freeze({
-		SET: 'set',
-		DELETE: 'delete',
-		CLEAR: 'clear'
+		SET: 'set', // set()
+		DELETE: 'delete', // delete()
+		CLEAR: 'clear', // clear()
+		SYNC: 'sync' // if the data is out of sync when the cooldown passes
 	});
 
 	/**
 	 * @typedef {Object} Options
 	 * @property {number} [cooldown=0]
 	 * @property {boolean} [deleteBypassesCooldown=true]
+	 * @property {boolean} [forceEmitAfterCooldownIfChanged=false]
 	 * @property {Array} [initialValue=[]]
 	 */
 	/**
@@ -28,6 +30,7 @@ module.exports = class SubscribableMap extends Map {
 	constructor({
 		cooldown = 0,
 		deleteBypassesCooldown = true,
+		forceEmitAfterCooldownIfChanged = false,
 		initialValue = []
 	} = {}) {
 		super();
@@ -42,11 +45,12 @@ module.exports = class SubscribableMap extends Map {
 		/** @private */
 		this._opts = {
 			cooldown,
-			deleteBypassesCooldown
+			deleteBypassesCooldown,
+			forceEmitAfterCooldownIfChanged
 		};
 
 		/**
-		 * @type {Map<string, number>}
+		 * @type {Map<string, {time: number, data: *>}
 		 * @private
 		 */
 		this._previousDispatchTimes = new Map();
@@ -56,6 +60,16 @@ module.exports = class SubscribableMap extends Map {
 		 * @private
 		 */
 		this._subscribers = new Set();
+
+		if (cooldown > 0 && forceEmitAfterCooldownIfChanged) {
+			setInterval(() => {
+				this._previousDispatchTimes.forEach((pv, pk) => {
+					if (Date.now() > pv.time + cooldown && this.get(pk) !== pv.data) {
+						this._emit(pk, this.get(pk), SubscribableMap.enum.SYNC, true);
+					}
+				});
+			}, 100).unref();
+		}
 	}
 
 	/**
@@ -115,20 +129,26 @@ module.exports = class SubscribableMap extends Map {
 	 * @param {*} key Key
 	 * @param {*} value Value
 	 * @param {SubscribableMapEnum} event Event
+	 * @param {boolean} [bypassCooldown=false] Whether the cooldown should be bypassed
 	 */
-	_emit(key, value, event) {
+	_emit(key, value, event, bypassCooldown = false) {
 		if (this._subscribers.size === 0) return;
 
 		let shouldDispatch = true;
 		// Doesn't make much sense having cooldown apply to clear() because there's no key passed in clear(), so skip the cooldown check
-		if (event !== SubscribableMap.enum.CLEAR && Date.now() < (this._previousDispatchTimes.get(key) || 0) + this._opts.cooldown) {
+		if (!bypassCooldown && (event !== SubscribableMap.enum.CLEAR &&
+				Date.now() < (this._previousDispatchTimes.has(key) ?
+					this._previousDispatchTimes.get(key).time : 0) + this._opts.cooldown)) {
 			if (!(event === SubscribableMap.enum.DELETE && this._opts.deleteBypassesCooldown)) {
 				shouldDispatch = false;
 			}
 		}
 
 		if (shouldDispatch) {
-			this._previousDispatchTimes.set(key, Date.now());
+			this._previousDispatchTimes.set(key, {
+				time: Date.now(),
+				data: value
+			});
 		}
 
 		this._subscribers.forEach(async (s) => {

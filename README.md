@@ -20,6 +20,7 @@ SubscribableMap extends the Map class, so the same API is available. However, ov
 The constructor takes the following options object:
 - cooldown: By setting this option, you can restrict SubscribableMap to only sending one event per key per time specified (in milliseconds) here.
 - deleteBypassesCooldown: By default, delete()/clear() bypass the cooldown. You can change this option so that delete() does not bypass the cooldown.
+- forceEmitAfterCooldownIfChanged: By setting this to true, a `sync` event will be emitted after the cooldown if the data has changed during the cooldown period. Note that this event may be up to 100ms late.
 - initialValue: If you'd like to initialize the Map with values, you can pass them here as a key-value array.
 
 ```js
@@ -42,4 +43,4 @@ map.subscribe((s) => {
 map.set('test', 'ing');
 ```
 
-**Important:** Only the `set()`, `delete()`, `clear()` methods will dispatch events. You can pass a boolean set to false as the last parameter to these methods to suppress the event for that update.
+**Important:** Only the `set()`, `delete()`, `clear()` methods will dispatch events. You can pass a boolean set to false as the last parameter to these methods to suppress the event for that update. Note that `sync` events (enabled with the `forceEmitAfterCooldownIfChanged` option) will still be dispatched even for suppressed updates.
