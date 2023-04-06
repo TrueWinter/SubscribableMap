@@ -10,7 +10,7 @@ npm i -S subscribablemap
 
 # Usage
 
-SubscribableMap extends the Map class, so the same API is available. The following methods have also been added:
+SubscribableMap extends the Map class, so the same API is available. However, overridden methods may work slightly differently to the Map API. The following methods have also been added:
 - subscribe(fn, [bypassCooldown]): Subscribes to changes. By default, the cooldown is respected when emitting events. This can be changed by setting `bypassCooldown` to false.
 - unsubscribe(fn): Unsubscribes from change events.
 - getSubscribers(): Gets the subscriber Set
@@ -42,4 +42,4 @@ map.subscribe((s) => {
 map.set('test', 'ing');
 ```
 
-**Important:** Only the `set()`, `delete()`, `clear()` methods will dispatch events.
+**Important:** Only the `set()`, `delete()`, `clear()` methods will dispatch events. You can pass a boolean set to false as the last parameter to these methods to suppress the event for that update.

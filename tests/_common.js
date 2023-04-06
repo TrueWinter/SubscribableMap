@@ -1,6 +1,9 @@
 /* eslint-disable jest/no-export */
-const { describe, test, expect, jest } = require('@jest/globals');
+const { describe, test, expect, jest, beforeEach } = require('@jest/globals');
+const { promisify } = require('util');
 const SubscribableMap = require('../index.js');
+
+const wait = promisify(setTimeout);
 
 /**
  * @param {SubscribableMap} map 
@@ -18,7 +21,7 @@ module.exports.common = (map) => {
 	/**
 	 * @param {SubscribableMap.SubscribeCallbackData} e
 	 */
-	var handleEvent = jest.fn();
+	let handleEvent = jest.fn();
 
 	test('subscribing adds callback to the subscription set', () => {
 		map.subscribe(handleEvent);
@@ -65,9 +68,66 @@ module.exports.common = (map) => {
 		map.subscribe(handleEvent);
 		map.set('test', 'ing');
 
-		expect(handleEvent).toHaveBeenCalled();
+		expect(handleEvent).toHaveBeenCalledTimes(1);
+	});
+
+	test('subscribers receive callbacks for clear()', () => {
+		map.subscribe(handleEvent);
+		map.clear();
+
+		expect(handleEvent).toHaveBeenCalledTimes(1);
+	});
+
+	test('set() event is not emitted if emit is false', async () => {
+		map.subscribe(handleEvent);
+		// To ensure that the non-emitting behaviour isn't being caused by a cooldown
+		await wait(1000);
+		map.set('test', '1234', false);
+
+		expect(handleEvent).toHaveBeenCalledTimes(0);
+	});
+	
+	test('delete() event is not emitted if emit is false', async () => {
+		map.subscribe(handleEvent);
+		// To ensure that the non-emitting behaviour isn't being caused by a cooldown
+		await wait(1000);
+		map.delete('test', false);
+
+		expect(handleEvent).toHaveBeenCalledTimes(0);
+	});
+
+	test('clear() event is not emitted if emit is false', async () => {
+		map.subscribe(handleEvent);
+		// To ensure that the non-emitting behaviour isn't being caused by a cooldown
+		await wait(1000);
+		map.clear(false);
+
+		expect(handleEvent).toHaveBeenCalledTimes(0);
 	});
 };
+
+// set() and clear() are already tested in common.
+// But delete is subject to cooldowns, which have different
+// settings in different tests so it's been moved to it's
+// own test object so it can be called only by the tests
+// that don't already have more specific delete() tests.
+module.exports.events = {
+	/**
+	 * @param {SubscribableMap} map 
+	 */
+	delete: (map) => {
+		/**
+		 * @param {SubscribableMap.SubscribeCallbackData} e
+		 */
+		let handleEvent = jest.fn();
+		test('subscribers receive callbacks for delete()', () => {
+			map.subscribe(handleEvent);
+			map.delete('test');
+
+			expect(handleEvent).toHaveBeenCalledTimes(1);
+		});
+	}
+}
 
 module.exports.defaults = {
 	/**

@@ -1,6 +1,6 @@
 {
   "name": "subscribablemap",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "SubscribableMap extends the Map class and calls a function when a value is changed.",
   "main": "index.js",
   "scripts": {

@@ -10,12 +10,19 @@ const INITIAL_VALUE = [
 const wait = promisify(setTimeout);
 
 var handleEvent = jest.fn((e) => e);
-beforeEach(() => {
-	jest.clearAllMocks();
-});
+
+function init(map) {
+	beforeEach(() => {
+		jest.clearAllMocks();
+		map.getSubscribers().forEach((s) => {
+			map.unsubscribe(s.fn);
+		});
+	});
+}
 
 describe('Initializing without initial value', () => {
 	let map = new SubscribableMap();
+	init(map);
 
 	commonTests.pre(map);
 
@@ -25,6 +32,7 @@ describe('Initializing without initial value', () => {
 	commonTests.defaults.defaultInitialValueBlank(map);
 
 	commonTests.common(map);
+	commonTests.events.delete(map);
 
 	test('no cooldown', async () => {
 		map.subscribe(handleEvent);
@@ -42,6 +50,7 @@ describe('Initializing with initial value', () => {
 	let map = new SubscribableMap({
 		initialValue: iv
 	});
+	init(map);
 
 	commonTests.pre(map);
 
@@ -55,7 +64,7 @@ describe('Initializing with initial value', () => {
 	commonTests.defaults.defaultInitialValueBlank(map);
 
 	commonTests.common(map);
-
+	commonTests.events.delete(map);
 
 	test('no cooldown', async () => {
 		map.subscribe(handleEvent);
@@ -72,6 +81,7 @@ describe('Initializing with cooldown set', () => {
 	let map = new SubscribableMap({
 		cooldown: 1000
 	});
+	init(map);
 
 	commonTests.pre(map);
 
@@ -97,6 +107,7 @@ describe('Initializing with cooldown set', () => {
 	});
 
 	test('delete bypasses cooldown', async() => {
+		map.subscribe(handleEvent);
 		map.set('delete-test', '1234');
 		map.set('delete-test', '5678');
 		map.delete('delete-test');
@@ -106,6 +117,7 @@ describe('Initializing with cooldown set', () => {
 	});
 
 	test('clear bypasses cooldown', async() => {
+		map.subscribe(handleEvent);
 		map.set('clear-test', '1234');
 		map.set('clear-test', '5678');
 		map.clear();
@@ -120,6 +132,7 @@ describe('Initializing with cooldown set, but deletes do not bypass cooldown', (
 		cooldown: 1000,
 		deleteBypassesCooldown: false
 	});
+	init(map);
 
 	commonTests.pre(map);
 
@@ -148,6 +161,7 @@ describe('Initializing with cooldown set, but deletes do not bypass cooldown', (
 	});
 
 	test('delete does not bypass cooldown', async() => {
+		map.subscribe(handleEvent);
 		map.set('delete-test', '1234');
 		map.set('delete-test', '5678');
 		map.delete('delete-test');
@@ -157,6 +171,7 @@ describe('Initializing with cooldown set, but deletes do not bypass cooldown', (
 	});
 
 	test('clear does not bypass cooldown', async() => {
+		map.subscribe(handleEvent);
 		map.set('clear-test', '1234');
 		map.set('clear-test', '5678');
 		map.clear();

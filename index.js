@@ -39,15 +39,22 @@ module.exports = class SubscribableMap extends Map {
 			}
 		}
 
+		/** @private */
 		this._opts = {
 			cooldown,
 			deleteBypassesCooldown
 		};
 
-		/** @type {Map<string, number>} */
+		/**
+		 * @type {Map<string, number>}
+		 * @private
+		 */
 		this._previousDispatchTimes = new Map();
 
-		/** @type {Set<{fn: function, bypassCooldown: boolean}>} */
+		/**
+		 * @type {Set<{fn: function, bypassCooldown: boolean}>}
+		 * @private
+		 */
 		this._subscribers = new Set();
 	}
 
@@ -139,26 +146,38 @@ module.exports = class SubscribableMap extends Map {
 	 * Sets the value for the key provided.
 	 * @param {*} key The key
 	 * @param {*} value The value
+	 * @param {boolean} [emit=true] Whether an event should be emitted for this change
 	 */
-	set(key, value) {
+	set(key, value, emit = true) {
 		super.set(key, value);
-		this._emit(key, value, SubscribableMap.enum.SET);
+
+		if (emit) {
+			this._emit(key, value, SubscribableMap.enum.SET);
+		}
 	}
 
 	/**
 	 * Deletes a key
 	 * @param {*} key The key to delete
+	 * @param {boolean} [emit=true] Whether an event should be emitted for this change
 	 */
-	delete(key) {
+	delete(key, emit = true) {
 		super.delete(key);
-		this._emit(key, undefined, SubscribableMap.enum.DELETE);
+
+		if (emit) {
+			this._emit(key, undefined, SubscribableMap.enum.DELETE);
+		}
 	}
 
 	/**
 	 * Clears the map
+	 * @param {boolean} [emit=true] Whether an event should be emitted for this change
 	 */
-	clear() {
+	clear(emit = true) {
 		super.clear();
-		this._emit(undefined, undefined, SubscribableMap.enum.CLEAR);
+
+		if (emit) {
+			this._emit(undefined, undefined, SubscribableMap.enum.CLEAR);
+		}
 	}
 };
