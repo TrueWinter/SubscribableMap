@@ -38,7 +38,7 @@ module.exports = class SubscribableMap extends Map {
 		// Attempting to pass the initial value in the super() call results in an error.
 		if (initialValue && Array.isArray(initialValue) && initialValue.length > 0) {
 			for (let i = 0; i < initialValue.length; i++) {
-				super.set(initialValue[i][0], initialValue[i][1]);
+				super.set(initialValue[i][0], initialValue[i][1], false);
 			}
 		}
 
